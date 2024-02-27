@@ -16,10 +16,10 @@ var keyWidth = 23
 
 // Hosts
 var rows = 8
-var hostWidth = 260
+var hostWidth = 280
 var hostHeight = 160
-var additionalHeightPerPort = 20
-var hostKeyOffsetX = 235
+var additionalHeightPerLine = 20
+var hostKeyOffsetX = 255
 var hostKeyOffsetY = 5
 var hostKeyPadding = 10
 var hostPadding = 30
@@ -129,7 +129,7 @@ func addHosts(cells []MxCell, scan *core.Scan, keyColorMap map[core.HostKey]stri
 		id := uuid.NewString()
 		cells = append(cells, MxCell{
 			Id:     id,
-			Value:  getHostValue(host),
+			Value:  getHostValue(&host),
 			Parent: "1",
 			Style:  "rounded=1;whiteSpace=wrap;html=1;arcSize=2",
 			Vertex: "1",
@@ -197,7 +197,7 @@ func addUnidentifiedHosts(cells []MxCell, scan *core.Scan) []MxCell {
 	for _, host := range scan.UnidentifiedHosts {
 		cells = append(cells, MxCell{
 			Id:     uuid.NewString(),
-			Value:  fmt.Sprintf("Unidentified host:<br><br>MAC: %v<br>IPv6: %v", host.MAC, host.IPv6),
+			Value:  getUnidentifiedHostValue(&host),
 			Parent: "1",
 			Style:  "rounded=1;whiteSpace=wrap;html=1;arcSize=2",
 			Vertex: "1",
@@ -215,10 +215,14 @@ func addUnidentifiedHosts(cells []MxCell, scan *core.Scan) []MxCell {
 }
 
 func getHostHeight(host *core.Host) int {
-	return hostHeight + len(host.Ports)*additionalHeightPerPort
+	hasLocalIPv6 := 1
+	if host.IPv6LinkLocal == "" {
+		hasLocalIPv6 = 0
+	}
+	return hostHeight + hasLocalIPv6*additionalHeightPerLine + len(host.Ports)*additionalHeightPerLine
 }
 
-func getHostValue(host core.Host) string {
+func getHostValue(host *core.Host) string {
 	serviceColor := "#bbb"
 	headerFontSize := 16
 	value := ""
@@ -234,8 +238,11 @@ func getHostValue(host core.Host) string {
 			host.IPv4,
 		)
 	}
-	if host.IPv6 != "" {
-		value += fmt.Sprintf("IPv6: %v<br>", host.IPv6)
+	if host.IPv6Global != "" {
+		value += fmt.Sprintf("Global IPv6: %v<br>", host.IPv6Global)
+	}
+	if host.IPv6LinkLocal != "" {
+		value += fmt.Sprintf("Link-local IPv6: %v<br>", host.IPv6LinkLocal)
 	}
 	if host.MAC != "" {
 		value += fmt.Sprintf("MAC: %v<br>", host.MAC)
@@ -267,6 +274,18 @@ func getHostValue(host core.Host) string {
 		value += fmt.Sprintf("Hops: %v<br>", host.Hops)
 	}
 
+	return value
+}
+
+func getUnidentifiedHostValue(host *core.UnidentifiedHost) string {
+	value := "Unidentified host:<br><br>"
+	value += fmt.Sprintf("MAC: %v<br>", host.MAC)
+	if host.IPv6Global != "" {
+		value += fmt.Sprintf("Global IPv6: %v<br>", host.IPv6Global)
+	}
+	if host.IPv6Local != "" {
+		value += fmt.Sprintf("Link-local IPv6: %v<br>", host.IPv6Local)
+	}
 	return value
 }
 

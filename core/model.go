@@ -6,18 +6,20 @@ type Scan struct {
 }
 
 type UnidentifiedHost struct {
-	IPv6 string `json:"ipv6"`
-	MAC  string `json:"mac"`
+	IPv6Local  string `json:"ipv6_local"`
+	IPv6Global string `json:"ipv6_global"`
+	MAC        string `json:"mac"`
 }
 
 type Host struct {
-	IPv4     string `json:"ipv4"`
-	IPv6     string `json:"ipv6"`
-	MAC      string `json:"mac"`
-	Hostname string `json:"hostname"`
-	Ports    []Port `json:"ports"`
-	Hops     int    `json:"hop_distance,omitempty"`
-	OS       string `json:"os,omitempty"`
+	IPv4          string `json:"ipv4"`
+	IPv6LinkLocal string `json:"ipv6_local"`
+	IPv6Global    string `json:"ipv6_global"`
+	MAC           string `json:"mac"`
+	Hostname      string `json:"hostname"`
+	Ports         []Port `json:"ports"`
+	Hops          int    `json:"hop_distance,omitempty"`
+	OS            string `json:"os,omitempty"`
 }
 
 type Port struct {

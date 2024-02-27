@@ -30,22 +30,52 @@ func ParseScan6(path string) []core.Host {
 	check(err)
 
 	output := strings.TrimSpace(string(data))
-
-	// If scan has global and local addresses, we only want global addresses
-	if strings.Contains(output, "Global addresses") {
-		output = strings.Split(output, "Global addresses:\n")[1]
-	}
 	lines := strings.Split(output, "\n")
 
-	var hosts []core.Host
+	ipType := ""
+	macHostMap := make(map[string]core.Host)
 	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		// Splits the first part of "Global addresses" or "Link-local addresses" to get the type of IP address.
+		if strings.Contains(line, "addresses") {
+			ipType = strings.Split(line, " ")[0]
+			continue
+		}
+
 		cols := strings.Split(line, " @ ")
-		hosts = append(hosts, core.Host{
-			IPv6: cols[0],
-			MAC:  strings.ToUpper(cols[1]),
-		})
+		ip := cols[0]
+		mac := strings.ToUpper(cols[1])
+
+		if ipType == "Link-local" {
+			if host, exists := macHostMap[mac]; exists {
+				host.IPv6LinkLocal = ip
+				macHostMap[mac] = host
+			} else {
+				macHostMap[mac] = core.Host{
+					IPv6LinkLocal: ip,
+					MAC:           mac,
+				}
+			}
+		} else if ipType == "Global" {
+			if host, exists := macHostMap[mac]; exists {
+				host.IPv6Global = ip
+				macHostMap[mac] = host
+			} else {
+				macHostMap[mac] = core.Host{
+					IPv6Global: ip,
+					MAC:        mac,
+				}
+			}
+		}
 	}
 
+	var hosts []core.Host
+	for _, host := range macHostMap {
+		hosts = append(hosts, host)
+	}
 	return hosts
 }
 
@@ -67,7 +97,7 @@ func convertHost(nmapHost Host) core.Host {
 		if address.Type == "ipv4" {
 			host.IPv4 = address.Value
 		} else if address.Type == "ipv6" {
-			host.IPv6 = address.Value
+			host.IPv6Global = address.Value
 		} else if address.Type == "mac" {
 			host.MAC = address.Value
 		}

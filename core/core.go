@@ -8,18 +8,20 @@ func ComplementWithIPv6(scan *Scan, ipv6Hosts *[]Host) *Scan {
 		foundExistingHost := false
 		for i, existingHost := range scan.Hosts {
 			if existingHost.MAC == ipv6Host.MAC {
-				scan.Hosts[i].IPv6 = ipv6Host.IPv6
+				scan.Hosts[i].IPv6Global = ipv6Host.IPv6Global
+				scan.Hosts[i].IPv6LinkLocal = ipv6Host.IPv6LinkLocal
 				foundExistingHost = true
 			}
 		}
 		if !foundExistingHost {
-			fmt.Printf("[!] Scan6 file contains a host with MAC [%v] and IPv6 [%v] that is not present in the model.\n", ipv6Host.MAC, ipv6Host.IPv6)
+			fmt.Printf("[!] Scan6 file contains a host with MAC [%v] and global IPv6 [%v] that is not present in the model.\n", ipv6Host.MAC, ipv6Host.IPv6Global)
 			// Only add the unidentified host if it is not already present:
-			unidentifiedHost := findUnidentifiedHostByIPv6(scan, ipv6Host.IPv6)
+			unidentifiedHost := findUnidentifiedHostByGlobalIPv6(scan, ipv6Host.IPv6Global)
 			if unidentifiedHost == nil {
 				scan.UnidentifiedHosts = append(scan.UnidentifiedHosts, UnidentifiedHost{
-					IPv6: ipv6Host.IPv6,
-					MAC:  ipv6Host.MAC,
+					IPv6Global: ipv6Host.IPv6Global,
+					IPv6Local:  ipv6Host.IPv6LinkLocal,
+					MAC:        ipv6Host.MAC,
 				})
 			}
 		}
@@ -27,9 +29,9 @@ func ComplementWithIPv6(scan *Scan, ipv6Hosts *[]Host) *Scan {
 	return scan
 }
 
-func findUnidentifiedHostByIPv6(scan *Scan, ipv6 string) *UnidentifiedHost {
+func findUnidentifiedHostByGlobalIPv6(scan *Scan, ipv6Global string) *UnidentifiedHost {
 	for i, host := range scan.UnidentifiedHosts {
-		if host.IPv6 == ipv6 {
+		if host.IPv6Global == ipv6Global {
 			return &scan.UnidentifiedHosts[i]
 		}
 	}
@@ -62,8 +64,11 @@ func findHostByIPv4(scan *Scan, ipv4 string) *Host {
 }
 
 func mergeHost(hostPtr *Host, newHost Host) *Host {
-	if newHost.IPv6 != "" {
-		hostPtr.IPv6 = newHost.IPv6
+	if newHost.IPv6Global != "" {
+		hostPtr.IPv6Global = newHost.IPv6Global
+	}
+	if newHost.IPv6LinkLocal != "" {
+		hostPtr.IPv6LinkLocal = newHost.IPv6LinkLocal
 	}
 	if newHost.MAC != "" {
 		hostPtr.MAC = newHost.MAC
